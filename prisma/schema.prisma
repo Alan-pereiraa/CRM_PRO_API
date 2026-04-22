@@ -1,0 +1,118 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum StatusProject {
+  ACTIVE
+  COMPLETED
+  PAUSED
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum StatusTask {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+
+model Account {
+  id              String   @id @default(uuid())
+  name            String
+  email           String   @unique
+  password_hash   String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  funnels        Funnel[]
+  projects       Project[]
+}
+
+model Funnel {
+  id         String   @id @default(uuid())
+  name        String
+  position    Int
+  color       String @unique
+  accountId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  account     Account  @relation(fields: [accountId], references: [id])
+  projects    Project[]
+}
+
+model Project {
+  id            String   @id @default(uuid())
+  title         String
+  description   String?
+  status        StatusProject @default(ACTIVE)
+  priority      Priority @default(MEDIUM)
+  value         Float?
+  deadline      DateTime?
+  position      Int @default(0)
+  funnelId      String
+  accountId     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  funnel        Funnel @relation(fields: [funnelId], references: [id])
+  account       Account @relation(fields: [accountId], references: [id])
+  contacts      Contact[]
+  tasks         Task[]
+}
+
+model Contact {
+  id        String @id @default(uuid())
+  name      String
+  email     String @unique
+  phone     String @unique
+  role      String
+  projectId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project   Project @relation(fields: [projectId], references: [id])
+}
+
+model Task {
+  id     String @id @default(uuid())
+  title  String
+  description String?
+  status StatusTask @default(PENDING)
+  priority Priority @default(MEDIUM)
+  dueDate DateTime?
+  projectId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id])
+  subTasks SubTask[]
+}
+
+model SubTask {
+  id     String @id @default(uuid())
+  title  String
+  completed Boolean @default(false)
+  taskId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  task Task @relation(fields: [taskId], references: [id])
+}
