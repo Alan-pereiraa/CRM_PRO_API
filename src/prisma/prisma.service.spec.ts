@@ -5,6 +5,9 @@ describe('PrismaService', () => {
   let service: PrismaService;
 
   beforeEach(async () => {
+    process.env.DATABASE_URL ??=
+      'postgresql://postgres:postgres@localhost:5432/test_db';
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [PrismaService],
     }).compile();
