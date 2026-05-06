@@ -28,7 +28,7 @@ enum StatusTask {
 
 model Session {
   id       String   @id @default(uuid())
-  token_hash     String   @unique
+  token_hash     String?   @unique
   accountId String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

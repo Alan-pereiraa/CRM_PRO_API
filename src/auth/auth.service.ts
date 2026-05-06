@@ -1,4 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { SignInDto } from './dto/sign-in.sto';
 import { SignUpDto } from './dto/sign-up.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -7,10 +12,13 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService, private jwtService: JwtService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+  ) {}
 
-  async generateToken(accountId: string) {
-    const payload = { sub: accountId };
+  async generateToken(accountId: string, sessionId: string) {
+    const payload = { sub: accountId, jti: sessionId };
 
     const accessToken = this.jwtService.sign(payload, {
       expiresIn: '15m',
@@ -24,29 +32,40 @@ export class AuthService {
   }
 
   async signUp(payload: SignUpDto) {
+    const password_hash = await bcrypt.hash(payload.password, 10);
+
     const newUser = await this.prisma.account.create({
       data: {
         name: payload.name,
         email: payload.email,
-        password_hash: payload.password,
+        password_hash,
       },
     });
 
-    const { accessToken, refreshToken } = await this.generateToken(newUser.id);
+    const session = await this.prisma.session.create({
+      data: {
+        accountId: newUser.id,
+      },
+    });
+
+    const { accessToken, refreshToken } = await this.generateToken(
+      newUser.id,
+      session.id,
+    );
 
     const tokenHash = await bcrypt.hash(refreshToken, 10);
 
-    await this.prisma.session.create({
-      data: {
-        token_hash: tokenHash,
-        accountId: newUser.id,
-      }
+    await this.prisma.session.update({
+      where: { id: session.id },
+      data: { token_hash: tokenHash },
     });
 
     return {
-      id: newUser.id,
-      email: newUser.email,
-      name: newUser.name,
+      account: {
+        id: newUser.id,
+        email: newUser.email,
+        name: newUser.name,
+      },
       accessToken,
       refreshToken,
     };
@@ -59,74 +78,110 @@ export class AuthService {
       },
     });
 
-    if(!user) {
-      throw new Error('Credenciais inválidas');
+    const isPasswordValid = await bcrypt.compare(
+      credentials.password,
+      user?.password_hash || '',
+    );
+
+    if (!user || !isPasswordValid) {
+      throw new UnauthorizedException('Credenciais inválidas');
     }
 
-    const { accessToken, refreshToken } = await this.generateToken(user.id);
-
-    await this.prisma.session.create({
+    const session = await this.prisma.session.create({
       data: {
-        token_hash: await bcrypt.hash(refreshToken, 10),
         accountId: user.id,
-      }
+      },
+    });
+
+    const { accessToken, refreshToken } = await this.generateToken(
+      user.id,
+      session.id,
+    );
+
+    const tokenHash = await bcrypt.hash(refreshToken, 10);
+
+    await this.prisma.session.update({
+      where: { id: session.id },
+      data: { token_hash: tokenHash },
     });
 
     return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
+      account: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+      },
       accessToken,
       refreshToken,
     };
   }
 
   async signOut(refreshToken: string) {
-    const payload = this.jwtService.verify(refreshToken);
-
-    const accountId = payload.sub;
-
-    const sessions = await this.prisma.session.findMany({
-      where: { accountId },
-    });
-
-    for (const session of sessions) {
-      const isMatch = await bcrypt.compare(refreshToken, session.token_hash);
-
-      if(isMatch) {
-        await this.prisma.session.delete({
-          where: { id: session.id },
-        });
-        break;
-      }
-    }
-
-    return { message: 'Desconectado com sucesso' };
-  }
-
-  async getProfile(token: string) {
     try {
-      const accessToken = token.replace('Bearer ', '');
+      const payload = this.jwtService.verify(refreshToken);
 
-      const payload = this.jwtService.verify(accessToken);
+      const sessionId = payload.jti;
 
+      if (sessionId) {
+        const session = await this.prisma.session.findUnique({
+          where: { id: sessionId },
+        });
+
+        if (!session) throw new UnauthorizedException('Sessão não encontrada');
+
+        if (!session.token_hash)
+          throw new UnauthorizedException('Token inválido');
+
+        const isMatch = await bcrypt.compare(refreshToken, session.token_hash);
+
+        if (!isMatch) throw new UnauthorizedException('Token inválido');
+
+        await this.prisma.session.delete({ where: { id: sessionId } });
+
+        return { message: 'Desconectado com sucesso' };
+      }
+
+      // fallback: scan sessions by accountId (keeps existing behavior)
       const accountId = payload.sub;
 
-      const user = await this.prisma.account.findUnique({
+      const sessions = await this.prisma.session.findMany({
+        where: { accountId },
+      });
+
+      for (const session of sessions) {
+        if (!session.token_hash) continue;
+
+        const isMatch = await bcrypt.compare(refreshToken, session.token_hash);
+
+        if (isMatch) {
+          await this.prisma.session.delete({ where: { id: session.id } });
+          break;
+        }
+      }
+
+      return { message: 'Desconectado com sucesso' };
+    } catch (err) {
+      throw new UnauthorizedException('Token de atualização inválido');
+    }
+  }
+
+  async getProfile(accountId: string) {
+    try {
+      const account = await this.prisma.account.findUnique({
         where: { id: accountId },
       });
 
-      if(!user) {
-        throw new Error('Usuário não encontrado');
+      if (!account) {
+        throw new NotFoundException('Usuário não encontrado');
       }
 
       return {
-        id: user.id,
-        email: user.email,
-        name: user.name,
+        id: account.id,
+        email: account.email,
+        name: account.name,
       };
     } catch (error) {
-      throw new Error('Token de acesso inválido');
+      throw new UnauthorizedException('Token de acesso inválido');
     }
   }
 
@@ -134,32 +189,29 @@ export class AuthService {
     try {
       const payload = this.jwtService.verify(refreshToken);
 
-      const accountId = payload.sub;
-
-      const sessions = await this.prisma.session.findMany({
-        where: { accountId },
+      const session = await this.prisma.session.findUnique({
+        where: { id: payload.jti },
       });
 
-      let validSession: { token_hash: string; accountId: string } | null = null;
-
-      for (const session of sessions) {
-        const isMatch = await bcrypt.compare(refreshToken, session.token_hash);
-
-        if(isMatch) {
-          validSession = session;
-          break;
-        }
-
-        if(!validSession) {
-          throw new Error('Token de atualização inválido');
-        }
+      if (!session) {
+        throw new UnauthorizedException('Token de atualização inválido');
       }
 
-      const { refreshToken: newRefreshToken } = await this.generateToken(accountId);
+      const accountId = payload.sub;
 
-      return { accessToken: newRefreshToken }
+      const { accessToken, refreshToken: newRefreshToken } =
+        await this.generateToken(accountId, session.id);
+
+      await this.prisma.session.update({
+        where: { id: session.id },
+        data: {
+          token_hash: await bcrypt.hash(newRefreshToken, 10),
+        },
+      });
+
+      return { accessToken, refreshToken: newRefreshToken };
     } catch (error) {
-      throw new Error('Token de atualização inválido');
+      throw new UnauthorizedException('Token de atualização inválido');
     }
   }
 }
