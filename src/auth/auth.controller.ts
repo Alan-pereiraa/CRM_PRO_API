@@ -10,7 +10,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { SignInDto } from './dto/sign-in.sto';
+import { SignInDto } from './dto/sign-in.dto';
 import { SignUpDto } from './dto/sign-up.dto';
 import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
 
@@ -20,10 +20,7 @@ export class AuthController {
 
   @Post('sign-up')
   @HttpCode(201)
-  async signUp(
-    @Body() payload: SignUpDto,
-    @Res({ passthrough: true }) res,
-  ) {
+  async signUp(@Body() payload: SignUpDto, @Res({ passthrough: true }) res) {
     const { account, accessToken, refreshToken } =
       await this.authService.signUp(payload);
 
@@ -44,7 +41,8 @@ export class AuthController {
     @Body() credentials: SignInDto,
     @Res({ passthrough: true }) res,
   ) {
-    const { account, accessToken, refreshToken } = await this.authService.signIn(credentials);
+    const { account, accessToken, refreshToken } =
+      await this.authService.signIn(credentials);
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
@@ -79,12 +77,10 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(200)
-  async refreshToken(
-    @Req() req,
-    @Res({ passthrough: true }) res
-  ) {
+  async refreshToken(@Req() req, @Res({ passthrough: true }) res) {
     const refreshToken = req.cookies.refreshToken;
-    const { accessToken, refreshToken: newRefreshToken } = await this.authService.refreshToken(refreshToken);
+    const { accessToken, refreshToken: newRefreshToken } =
+      await this.authService.refreshToken(refreshToken);
 
     res.cookie('refreshToken', newRefreshToken, {
       httpOnly: true,

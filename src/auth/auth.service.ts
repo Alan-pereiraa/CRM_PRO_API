@@ -2,9 +2,8 @@ import {
   Injectable,
   NotFoundException,
   UnauthorizedException,
-  BadRequestException,
 } from '@nestjs/common';
-import { SignInDto } from './dto/sign-in.sto';
+import { SignInDto } from './dto/sign-in.dto';
 import { SignUpDto } from './dto/sign-up.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
@@ -141,7 +140,6 @@ export class AuthService {
         return { message: 'Desconectado com sucesso' };
       }
 
-      // fallback: scan sessions by accountId (keeps existing behavior)
       const accountId = payload.sub;
 
       const sessions = await this.prisma.session.findMany({
