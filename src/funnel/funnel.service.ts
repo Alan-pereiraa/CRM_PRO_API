@@ -20,17 +20,36 @@ export class FunnelService {
         });
     }
 
+    getFunnelProjects(id: string) {
+        return this.prisma.project.findMany({
+            where: { funnelId: id },
+        });
+    }
+
     createFunnel(payload: CreateFunnelDto & { accountId: string }) {
+        const { accountId, ...data } = payload;
         return this.prisma.funnel.create({
-            data: payload
+            data: {
+                ...data,
+                account: {
+                    connect: { id: accountId },
+                },
+            },
         });
     }
 
     updateFunnel(id: string, payload: UpdateFunnelDto) {
+        const funnel = this.prisma.funnel.findUnique({
+            where: { id },
+        });
+
+        if (!funnel) {
+            throw new NotFoundException('Funil não encontrado');
+        }
 
         return this.prisma.funnel.update({
             where: { id },
-            data: payload
+            data: payload,
         });
     }
 
@@ -50,6 +69,14 @@ export class FunnelService {
     }
 
     deleteFunnel(id: string) {
+        const funnel = this.prisma.funnel.findUnique({
+            where: { id },
+        });
+
+        if(!funnel) {
+            throw new NotFoundException('Funil não encontrado');
+        }
+
         return this.prisma.funnel.delete({
             where: { id },
         });

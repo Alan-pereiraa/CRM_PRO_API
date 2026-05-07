@@ -20,12 +20,6 @@ export class ProjectService {
     });
   }
 
-  getProjectFunnels(id: string) {
-    return this.prisma.project.findMany({
-      where: { funnelId: id },
-    });
-  }
-
   getProjectDetails(id: string) {
     return this.prisma.project.findUnique({
       where: { id },

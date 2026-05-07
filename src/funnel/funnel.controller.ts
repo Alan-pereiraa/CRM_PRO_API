@@ -4,13 +4,13 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth/jwt-auth.guard';
 import { CreateFunnelDto } from './dto/create-funnel.dto';
 import { UpdateFunnelDto } from './dto/update.funnel.dto';
 
-@Controller('funnel')
+@Controller('funnels')
 export class FunnelController {
   constructor(
     private readonly funnelService: FunnelService
   ) {}
 
-  @Get('funnels')
+  @Get('/')
   @UseGuards(JwtAuthGuard)
   getFunnels(
     @Req() req,
@@ -18,7 +18,7 @@ export class FunnelController {
     return this.funnelService.getFunnels(req.account.id);
   }
 
-  @Get('funnels/:id')
+  @Get(':id')
   @UseGuards(JwtAuthGuard)
   getFunnelById(
     @Param('id') id: string,
@@ -26,7 +26,15 @@ export class FunnelController {
     return this.funnelService.getFunnelById(id);
   }
 
-  @Post('funnels')
+  @Get(':id/projects')
+  @UseGuards(JwtAuthGuard)
+  getFunnelProjects(
+    @Param('id') id: string,
+  ) {
+    return this.funnelService.getFunnelProjects(id);
+  }
+
+  @Post('/')
   @UseGuards(JwtAuthGuard)
   createFunnel(
     @Req() req,
@@ -40,7 +48,7 @@ export class FunnelController {
     return this.funnelService.createFunnel(payload);
   }
 
-  @Put('funnels/:id')
+  @Put(':id')
   @UseGuards(JwtAuthGuard)
   updateFunnel(
     @Param('id') id: string,
@@ -49,7 +57,7 @@ export class FunnelController {
     return this.funnelService.updateFunnel(id, funnelData);
   }
 
-  @Patch('funnels/:id/position')
+  @Patch(':id/position')
   @UseGuards(JwtAuthGuard)
   updateFunnelPosition(
     @Param('id') id: string,
@@ -58,7 +66,7 @@ export class FunnelController {
     return this.funnelService.updateFunnelPosition(id, position);
   }
 
-  @Delete('funnels/:id')
+  @Delete(':id')
   @UseGuards(JwtAuthGuard)
   deleteFunnel(
     @Param('id') id: string,
