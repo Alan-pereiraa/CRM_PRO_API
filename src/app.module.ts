@@ -7,9 +7,10 @@ import { PrismaService } from './prisma/prisma.service';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { FunnelModule } from './funnel/funnel.module';
 import { ProjectModule } from './project/project.module';
+import { TaskModule } from './task/task.module';
 
 @Module({
-  imports: [AuthModule, PrismaModule, DashboardModule, FunnelModule, ProjectModule],
+  imports: [AuthModule, PrismaModule, DashboardModule, FunnelModule, ProjectModule, TaskModule],
   controllers: [AppController],
   providers: [AppService, PrismaService],
 })
