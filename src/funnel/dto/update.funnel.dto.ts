@@ -1,15 +1,4 @@
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { PartialType } from '@nestjs/mapped-types';
+import { CreateFunnelDto } from './create-funnel.dto';
 
-export class UpdateFunnelDto {
-    @IsString()
-    @IsNotEmpty()
-    name!: string;
-
-    @IsNumber()
-    @IsNotEmpty()
-    position!: number;
-
-    @IsString()
-    @IsNotEmpty()
-    color!: string;
-}
+export class UpdateFunnelDto extends PartialType(CreateFunnelDto) {}
