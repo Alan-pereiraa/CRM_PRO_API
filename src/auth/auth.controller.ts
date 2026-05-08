@@ -14,9 +14,25 @@ import { SignInDto } from './dto/sign-in.dto';
 import { SignUpDto } from './dto/sign-up.dto';
 import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
 
+const refreshTokenCookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict' as const,
+  path: '/',
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  private setRefreshTokenCookie(res: any, refreshToken: string) {
+    res.cookie('refreshToken', refreshToken, refreshTokenCookieOptions);
+  }
+
+  private clearRefreshTokenCookie(res: any) {
+    res.clearCookie('refreshToken', { path: refreshTokenCookieOptions.path });
+  }
 
   @Post('sign-up')
   @HttpCode(201)
@@ -24,13 +40,7 @@ export class AuthController {
     const { account, accessToken, refreshToken } =
       await this.authService.signUp(payload);
 
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    this.setRefreshTokenCookie(res, refreshToken);
 
     return { account, accessToken };
   }
@@ -44,26 +54,19 @@ export class AuthController {
     const { account, accessToken, refreshToken } =
       await this.authService.signIn(credentials);
 
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    this.setRefreshTokenCookie(res, refreshToken);
 
     return { account, accessToken };
   }
 
   @Post('sign-out')
-  @UseGuards(JwtAuthGuard)
   @HttpCode(200)
   async signOut(@Req() req, @Res({ passthrough: true }) res) {
     const refreshToken = req.cookies?.refreshToken;
 
     const result = await this.authService.signOut(refreshToken);
 
-    res.clearCookie('refreshToken', { path: '/' });
+    this.clearRefreshTokenCookie(res);
 
     return result;
   }
@@ -82,13 +85,7 @@ export class AuthController {
     const { accessToken, refreshToken: newRefreshToken } =
       await this.authService.refreshToken(refreshToken);
 
-    res.cookie('refreshToken', newRefreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    this.setRefreshTokenCookie(res, newRefreshToken);
 
     return { accessToken };
   }
