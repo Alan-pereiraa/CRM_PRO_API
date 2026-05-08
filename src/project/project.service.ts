@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { StatusProject } from '../../generated/prisma/enums';
 
@@ -7,34 +7,41 @@ import { StatusProject } from '../../generated/prisma/enums';
 export class ProjectService {
   constructor(private readonly prisma: PrismaService) {}
 
-  getProjects(accountId: string) {
-    return this.prisma.project.findMany({
+  async getProjects(accountId: string) {
+    return await this.prisma.project.findMany({
       where: { accountId },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  getProjectById(id: string) {
-    return this.prisma.project.findUnique({
-      where: { id },
+  async getProjectById(id: string, accountId: string) {
+    const project = await this.prisma.project.findFirst({
+      where: { id, accountId },
     });
+    if (!project) {
+      throw new NotFoundException('Projeto não encontrado');
+    }
+    return project;
   }
 
-  getProjectDetails(id: string) {
-    return this.prisma.project.findUnique({
-      where: { id },
+  async getProjectDetails(id: string, accountId: string) {
+    const project = await this.prisma.project.findFirst({
+      where: { id, accountId },
       include: {
         funnel: true,
         tasks: true,
         contacts: true,
       },
     });
+    if (!project) {
+      throw new NotFoundException('Projeto não encontrado');
+    }
+    return project;
   }
 
-  createProject(payload: CreateProjectDto & { accountId: string }) {
-    console.log('Creating project with payload:', payload);
+  async createProject(payload: CreateProjectDto & { accountId: string }) {
     const { funnelId, accountId, ...data } = payload;
-    return this.prisma.project.create({
+    return await this.prisma.project.create({
       data: {
         ...data,
         funnel: {
@@ -47,38 +54,41 @@ export class ProjectService {
     });
   }
 
-  updateProject(
+  async updateProject(
     id: string,
     payload: Partial<CreateProjectDto> & { accountId: string },
   ) {
     const { funnelId, accountId, ...data } = payload;
-    return this.prisma.project.update({
-      where: { id },
+    return await this.prisma.project.update({
+      where: { id, accountId },
       data: {
         ...data,
         ...(funnelId && { funnel: { connect: { id: funnelId } } }),
-        ...(accountId && { account: { connect: { id: accountId } } }),
       },
     });
   }
 
-  updateProjectPosition(id: string, position: number) {
-    return this.prisma.project.update({
-      where: { id },
+  async updateProjectPosition(id: string, position: number, accountId: string) {
+    return await this.prisma.project.update({
+      where: { id, accountId },
       data: { position },
     });
   }
 
-  updateProjectStatus(id: string, status: StatusProject) {
-    return this.prisma.project.update({
-      where: { id },
+  async updateProjectStatus(
+    id: string,
+    status: StatusProject,
+    accountId: string,
+  ) {
+    return await this.prisma.project.update({
+      where: { id, accountId },
       data: { status },
     });
   }
 
-  deleteProject(id: string) {
-    return this.prisma.project.delete({
-      where: { id },
+  async deleteProject(id: string, accountId: string) {
+    return await this.prisma.project.delete({
+      where: { id, accountId },
     });
   }
 }
