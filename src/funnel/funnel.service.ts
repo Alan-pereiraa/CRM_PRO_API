@@ -1,84 +1,98 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateFunnelDto } from './dto/create-funnel.dto';
 import { UpdateFunnelDto } from './dto/update.funnel.dto';
 
 @Injectable()
 export class FunnelService {
-    constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-    getFunnels(accountId: string) {
-        return this.prisma.funnel.findMany({
-            where: { accountId },
-            orderBy: { position: 'asc' },
-        });
+  getFunnels(accountId: string) {
+    return this.prisma.funnel.findMany({
+      where: { accountId },
+      orderBy: { position: 'asc' },
+    });
+  }
+
+  async getFunnelById(id: string, accountId: string) {
+    const funnel = await this.prisma.funnel.findFirst({
+      where: { id, accountId },
+    });
+
+    if (!funnel) {
+      throw new NotFoundException('Funil não encontrado');
     }
 
-    getFunnelById(id: string) {
-        return this.prisma.funnel.findUnique({
-            where: { id },
-        });
+    return funnel;
+  }
+
+  async getFunnelProjects(id: string, accountId: string) {
+    const funnel = await this.prisma.funnel.findFirst({
+      where: { id, accountId },
+    });
+
+    if (!funnel) {
+      throw new NotFoundException('Funil não encontrado');
     }
 
-    getFunnelProjects(id: string) {
-        return this.prisma.project.findMany({
-            where: { funnelId: id },
-        });
+    return this.prisma.project.findMany({
+      where: { funnelId: id, accountId },
+    });
+  }
+
+  createFunnel(payload: CreateFunnelDto & { accountId: string }) {
+    const { accountId, ...data } = payload;
+    return this.prisma.funnel.create({
+      data: {
+        ...data,
+        account: {
+          connect: { id: accountId },
+        },
+      },
+    });
+  }
+
+  async updateFunnel(id: string, accountId: string, payload: UpdateFunnelDto) {
+    const funnel = await this.prisma.funnel.findFirst({
+      where: { id, accountId },
+    });
+
+    if (!funnel) {
+      throw new NotFoundException('Funil não encontrado');
     }
 
-    createFunnel(payload: CreateFunnelDto & { accountId: string }) {
-        const { accountId, ...data } = payload;
-        return this.prisma.funnel.create({
-            data: {
-                ...data,
-                account: {
-                    connect: { id: accountId },
-                },
-            },
-        });
+    return this.prisma.funnel.update({
+      where: { id },
+      data: payload,
+    });
+  }
+
+  async updateFunnelPosition(id: string, accountId: string, position: number) {
+    const funnel = await this.prisma.funnel.findFirst({
+      where: { id, accountId },
+    });
+
+    if (!funnel) {
+      throw new NotFoundException('Funil não encontrado');
     }
 
-    updateFunnel(id: string, payload: UpdateFunnelDto) {
-        const funnel = this.prisma.funnel.findUnique({
-            where: { id },
-        });
+    return this.prisma.funnel.update({
+      where: { id },
+      data: { position },
+    });
+  }
 
-        if (!funnel) {
-            throw new NotFoundException('Funil não encontrado');
-        }
+  async deleteFunnel(id: string, accountId: string) {
+    const funnel = await this.prisma.funnel.findFirst({
+      where: { id, accountId },
+    });
 
-        return this.prisma.funnel.update({
-            where: { id },
-            data: payload,
-        });
+    if (!funnel) {
+      throw new NotFoundException('Funil não encontrado');
     }
 
-    async updateFunnelPosition(id: string, position: number) {
-        const funnel = await this.prisma.funnel.findUnique({
-            where: { id },
-        });
-
-        if (!funnel) {
-            throw new NotFoundException('Funil não encontrado');
-        }
-
-        return this.prisma.funnel.update({
-            where: { id },
-            data: { position },
-        });
-    }
-
-    deleteFunnel(id: string) {
-        const funnel = this.prisma.funnel.findUnique({
-            where: { id },
-        });
-
-        if(!funnel) {
-            throw new NotFoundException('Funil não encontrado');
-        }
-
-        return this.prisma.funnel.delete({
-            where: { id },
-        });
-    }
+    return this.prisma.funnel.delete({
+      where: { id },
+    });
+  }
 }

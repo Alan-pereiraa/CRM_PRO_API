@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
 
@@ -17,8 +17,8 @@ export class ContactService {
     });
   }
 
-  getContact(id: string, accountId: string) {
-    return this.prisma.contact.findFirst({
+  async getContact(id: string, accountId: string) {
+    const contact = await this.prisma.contact.findFirst({
       where: {
         id,
         project: {
@@ -26,6 +26,12 @@ export class ContactService {
         },
       },
     });
+
+    if (!contact) {
+      throw new NotFoundException('Contato não encontrado');
+    }
+
+    return contact;
   }
 
   searchContacts(accountId: string, query: string) {
