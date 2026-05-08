@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Post,
@@ -11,7 +12,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ContactService } from './contact.service';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
 
@@ -25,15 +26,13 @@ export class ContactController {
     return this.contactService.getContacts(req.account.id);
   }
 
-  @Get('/:id')
-  @UseGuards(JwtAuthGuard)
-  getContact(@Param('id') id: string, @Req() req) {
-    return this.contactService.getContact(id, req.account.id);
-  }
-
   @Get('/search')
   @UseGuards(JwtAuthGuard)
   searchContacts(@Req() req, @Query('q') query: string) {
+    if (!query?.trim()) {
+      throw new BadRequestException('Parâmetro q é obrigatório');
+    }
+
     return this.contactService.searchContacts(req.account.id, query);
   }
 
@@ -41,6 +40,12 @@ export class ContactController {
   @UseGuards(JwtAuthGuard)
   getContactsByProject(@Param('projectId') projectId: string, @Req() req) {
     return this.contactService.getContactsByProject(projectId, req.account.id);
+  }
+
+  @Get('/:id')
+  @UseGuards(JwtAuthGuard)
+  getContact(@Param('id') id: string, @Req() req) {
+    return this.contactService.getContact(id, req.account.id);
   }
 
   @Post('/')
