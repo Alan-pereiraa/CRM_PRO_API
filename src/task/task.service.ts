@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { StatusTask } from '@prisma/client';
@@ -8,8 +8,8 @@ import { StatusTask } from '@prisma/client';
 export class TaskService {
   constructor(private readonly prisma: PrismaService) {}
 
-  getTasks(accountId: string, status?: string) {
-    return this.prisma.task.findMany({
+  async getTasks(accountId: string, status?: string) {
+    return await this.prisma.task.findMany({
       where: {
         project: {
           accountId: accountId,
@@ -19,20 +19,29 @@ export class TaskService {
     });
   }
 
-  getTask(id: string) {
-    return this.prisma.task.findUnique({
-      where: { id },
+  async getTask(id: string, accountId: string) {
+    const task = await this.prisma.task.findFirst({
+      where: {
+        id,
+        project: {
+          accountId,
+        },
+      },
     });
+    if (!task) {
+      throw new NotFoundException('Tarefa não encontrada');
+    }
+    return task;
   }
 
-  getTodayTasks(accountId: string) {
+  async getTodayTasks(accountId: string) {
     const today = new Date();
     const startOfDay = new Date(today);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(today);
     endOfDay.setHours(23, 59, 59, 999);
 
-    return this.prisma.task.findMany({
+    return await this.prisma.task.findMany({
       where: {
         project: {
           accountId: accountId,
@@ -45,28 +54,70 @@ export class TaskService {
     });
   }
 
-  createTask(taskData: CreateTaskDto) {
-    return this.prisma.task.create({
+  async createTask(taskData: CreateTaskDto, accountId: string) {
+    const project = await this.prisma.project.findFirst({
+      where: {
+        id: taskData.projectId,
+        accountId,
+      },
+    });
+    if (!project) {
+      throw new NotFoundException('Projeto não encontrado');
+    }
+    return await this.prisma.task.create({
       data: taskData,
     });
   }
 
-  updateTask(id: string, taskData: UpdateTaskDto) {
-    return this.prisma.task.update({
+  async updateTask(id: string, taskData: UpdateTaskDto, accountId: string) {
+    const task = await this.prisma.task.findFirst({
+      where: {
+        id,
+        project: {
+          accountId,
+        },
+      },
+    });
+    if (!task) {
+      throw new NotFoundException('Tarefa não encontrada');
+    }
+    return await this.prisma.task.update({
       where: { id },
       data: taskData,
     });
   }
 
-  updateTaskStatus(id: string, status: StatusTask) {
-    return this.prisma.task.update({
+  async updateTaskStatus(id: string, status: StatusTask, accountId: string) {
+    const task = await this.prisma.task.findFirst({
+      where: {
+        id,
+        project: {
+          accountId,
+        },
+      },
+    });
+    if (!task) {
+      throw new NotFoundException('Tarefa não encontrada');
+    }
+    return await this.prisma.task.update({
       where: { id },
       data: { status },
     });
   }
 
-  deleteTask(id: string) {
-    return this.prisma.task.delete({
+  async deleteTask(id: string, accountId: string) {
+    const task = await this.prisma.task.findFirst({
+      where: {
+        id,
+        project: {
+          accountId,
+        },
+      },
+    });
+    if (!task) {
+      throw new NotFoundException('Tarefa não encontrada');
+    }
+    return await this.prisma.task.delete({
       where: { id },
     });
   }

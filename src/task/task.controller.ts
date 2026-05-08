@@ -11,8 +11,9 @@ import {
   Query,
 } from '@nestjs/common';
 import { TaskService } from './task.service';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
 import { CreateTaskDto } from './dto/create-task.dto';
+import { UpdateTaskDto } from './dto/update-task.dto';
 import { UpdateTaskStatusDto } from './dto/update-task-status.dto';
 
 @Controller('tasks')
@@ -21,43 +22,55 @@ export class TaskController {
 
   @Get('/')
   @UseGuards(JwtAuthGuard)
-  getTasks(@Req() req, @Query('status') status?: string) {
-    return this.taskService.getTasks(req.account.id, status);
+  async getTasks(@Req() req, @Query('status') status?: string) {
+    return await this.taskService.getTasks(req.account.id, status);
   }
 
   @Get('today')
   @UseGuards(JwtAuthGuard)
-  getTodayTasks(@Req() req) {
-    return this.taskService.getTodayTasks(req.account.id);
+  async getTodayTasks(@Req() req) {
+    return await this.taskService.getTodayTasks(req.account.id);
   }
 
   @Get(':id')
   @UseGuards(JwtAuthGuard)
-  getTask(@Param('id') id: string) {
-    return this.taskService.getTask(id);
+  async getTask(@Req() req, @Param('id') id: string) {
+    return await this.taskService.getTask(id, req.account.id);
   }
 
   @Post('/')
   @UseGuards(JwtAuthGuard)
-  createTask(@Body() taskData: CreateTaskDto) {
-    return this.taskService.createTask(taskData);
+  async createTask(@Req() req, @Body() taskData: CreateTaskDto) {
+    return await this.taskService.createTask(taskData, req.account.id);
   }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
-  updateTask(@Param('id') id: string, @Body() taskData: CreateTaskDto) {
-    return this.taskService.updateTask(id, taskData);
+  async updateTask(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() taskData: UpdateTaskDto,
+  ) {
+    return await this.taskService.updateTask(id, taskData, req.account.id);
   }
 
   @Patch(':id/status')
   @UseGuards(JwtAuthGuard)
-  updateTaskStatus(@Param('id') id: string, @Body() body: UpdateTaskStatusDto) {
-    return this.taskService.updateTaskStatus(id, body.status);
+  async updateTaskStatus(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() body: UpdateTaskStatusDto,
+  ) {
+    return await this.taskService.updateTaskStatus(
+      id,
+      body.status,
+      req.account.id,
+    );
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
-  deleteTask(@Param('id') id: string) {
-    return this.taskService.deleteTask(id);
+  async deleteTask(@Req() req, @Param('id') id: string) {
+    return await this.taskService.deleteTask(id, req.account.id);
   }
 }
