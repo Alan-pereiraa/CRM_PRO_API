@@ -19,6 +19,8 @@ describe('AuthService', () => {
     },
     session: {
       create: jest.fn(),
+      update: jest.fn(),
+      findUnique: jest.fn(),
     },
   };
 
@@ -26,9 +28,13 @@ describe('AuthService', () => {
     sign: jest
       .fn()
       .mockImplementation((payload: { sub: string }) => `token-${payload.sub}`),
+    verify: jest.fn(),
   };
 
-  const bcryptMock = jest.mocked(bcrypt);
+  const hashMock = bcrypt.hash as jest.MockedFunction<typeof bcrypt.hash>;
+  const compareMock = bcrypt.compare as jest.MockedFunction<
+    typeof bcrypt.compare
+  >;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -44,7 +50,9 @@ describe('AuthService', () => {
   });
 
   it('signUp deve criar usuário, criar sessão e retornar tokens', async () => {
-    bcryptMock.hash.mockResolvedValueOnce('hashed-password' as never);
+    hashMock
+      .mockImplementationOnce(async () => 'hashed-password')
+      .mockImplementationOnce(async () => 'hashed-refresh-token');
 
     prismaMock.account.create.mockResolvedValueOnce({
       id: 'user-1',
@@ -56,6 +64,11 @@ describe('AuthService', () => {
       id: 'session-1',
     });
 
+    prismaMock.session.update.mockResolvedValueOnce({
+      id: 'session-1',
+      token_hash: 'hashed-refresh-token',
+    });
+
     const result = await service.signUp({
       name: 'Teste',
       email: 'teste@teste.com',
@@ -64,20 +77,29 @@ describe('AuthService', () => {
 
     expect(prismaMock.account.create).toHaveBeenCalled();
     expect(prismaMock.session.create).toHaveBeenCalled();
+    expect(prismaMock.session.update).toHaveBeenCalled();
     expect(result).toHaveProperty('accessToken');
     expect(result).toHaveProperty('refreshToken');
-    expect(result.email).toBe('teste@teste.com');
+    expect(result.account.email).toBe('teste@teste.com');
   });
 
   it('Sign-in deve validar as credenciais, e criar a sessão do usuário', async () => {
-    const account: { email: string; password: string } = {
+    const account = {
+      id: 'user-1',
+      name: 'Teste',
       email: 'teste@teste.com',
-      password: 'hashed-password',
+      password_hash: 'hashed-password',
     };
 
     prismaMock.account.findUnique.mockResolvedValueOnce(account);
+    prismaMock.session.create.mockResolvedValueOnce({ id: 'session-1' });
+    prismaMock.session.update.mockResolvedValueOnce({
+      id: 'session-1',
+      token_hash: 'hashed-refresh-token',
+    });
+    hashMock.mockImplementationOnce(async () => 'hashed-refresh-token');
 
-    bcryptMock.compare.mockResolvedValueOnce(true);
+    compareMock.mockImplementationOnce(async () => true);
 
     const result = await service.signIn({
       email: account.email,
@@ -85,6 +107,33 @@ describe('AuthService', () => {
     } as any);
 
     expect(prismaMock.account.findUnique).toHaveBeenCalled();
+    expect(prismaMock.session.create).toHaveBeenCalled();
+    expect(prismaMock.session.update).toHaveBeenCalled();
+    expect(result).toHaveProperty('accessToken');
+    expect(result).toHaveProperty('refreshToken');
+  });
+
+  it('refreshToken deve validar o hash persistido antes de renovar os tokens', async () => {
+    jwtMock.verify.mockReturnValueOnce({ sub: 'user-1', jti: 'session-1' });
+    prismaMock.session.findUnique.mockResolvedValueOnce({
+      id: 'session-1',
+      token_hash: 'stored-hash',
+    });
+    compareMock.mockImplementationOnce(async () => true);
+    hashMock.mockImplementationOnce(async () => 'rotated-hash');
+    prismaMock.session.update.mockResolvedValueOnce({
+      id: 'session-1',
+      token_hash: 'rotated-hash',
+    });
+
+    const result = await service.refreshToken('old-refresh-token');
+
+    expect(jwtMock.verify).toHaveBeenCalledWith('old-refresh-token');
+    expect(compareMock).toHaveBeenCalledWith(
+      'old-refresh-token',
+      'stored-hash',
+    );
+    expect(prismaMock.session.update).toHaveBeenCalled();
     expect(result).toHaveProperty('accessToken');
     expect(result).toHaveProperty('refreshToken');
   });

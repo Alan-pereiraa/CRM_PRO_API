@@ -28,32 +28,34 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('Token de acesso inválido');
     }
 
+    let payload: { jti: string; sub: string };
+
     try {
-      const payload = this.jwtService.verify(token, {
+      payload = this.jwtService.verify(token, {
         secret: process.env.SECRET_KEY,
       });
-
-      const session = await this.prismaService.session.findFirst({
-        where: { id: payload.jti },
-      });
-
-      if (!session) {
-        throw new UnauthorizedException('Token de acesso inválido');
-      }
-
-      const account = await this.prismaService.account.findUnique({
-        where: { id: payload.sub },
-      });
-
-      if(!account) {
-        throw new UnauthorizedException('Token de acesso inválido');
-      }
-      
-      request.account = account;
-
-      return true;
     } catch {
       throw new UnauthorizedException('Token de acesso inválido');
     }
+
+    const session = await this.prismaService.session.findUnique({
+      where: { id: payload.jti },
+    });
+
+    if (!session) {
+      throw new UnauthorizedException('Token de acesso inválido');
+    }
+
+    const account = await this.prismaService.account.findUnique({
+      where: { id: payload.sub },
+    });
+
+    if (!account) {
+      throw new UnauthorizedException('Token de acesso inválido');
+    }
+
+    request.account = account;
+
+    return true;
   }
 }

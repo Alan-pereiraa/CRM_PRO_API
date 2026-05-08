@@ -44,19 +44,26 @@ describe('AuthController', () => {
     };
 
     authServiceMock.signUp.mockResolvedValueOnce({
-      id: 'user-1',
-      email: payload.email,
-      name: payload.name,
+      account: {
+        id: 'user-1',
+        email: payload.email,
+        name: payload.name,
+      },
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
     });
 
-    const result = await controller.signUp(payload);
+    const res = {
+      cookie: jest.fn(),
+    } as any;
+
+    const result = await controller.signUp(payload, res);
 
     expect(authServiceMock.signUp).toHaveBeenCalledWith(payload);
+    expect(res.cookie).toHaveBeenCalled();
     expect(result).toHaveProperty('accessToken');
-    expect(result).toHaveProperty('refreshToken');
-    expect(result).toHaveProperty('id');
-    expect(result.email).toEqual('teste@teste.com');
+    expect(result).toHaveProperty('account');
+    expect(result.account).toHaveProperty('id');
+    expect(result.account.email).toEqual('teste@teste.com');
   });
 });
