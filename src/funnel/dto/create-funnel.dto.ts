@@ -1,15 +1,19 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class CreateFunnelDto {
-    @IsString()
-    @IsNotEmpty()
-    name!: string;
+  @ApiProperty({ example: 'Pipeline Comercial' })
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
 
-    @IsNumber()
-    @IsNotEmpty()
-    position!: number;
+  @ApiProperty({ example: 1 })
+  @IsNumber()
+  @IsNotEmpty()
+  position!: number;
 
-    @IsString()
-    @IsNotEmpty()
-    color!: string;
+  @ApiProperty({ example: '#FFAA00' })
+  @IsString()
+  @IsNotEmpty()
+  color!: string;
 }
