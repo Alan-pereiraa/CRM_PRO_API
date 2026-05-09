@@ -1,63 +1,117 @@
 # CRM Pro API
 
-API base construída com NestJS para servir como ponto de partida do projeto CRM Pro.
+API backend do CRM Pro desenvolvida com NestJS, Prisma e PostgreSQL.
 
-## Descrição
+## Visão geral
 
-O projeto atualmente expõe uma rota raiz simples que retorna `Hello World!`.
+Esta API centraliza a operação de um CRM com foco em organização comercial e acompanhamento de pipeline. Ela oferece:
 
-Autenticação:
+- Autenticação com JWT e sessão via refresh token em cookie httpOnly
+- Cadastro, login, logout, renovação de token e consulta de perfil
+- Dashboard com visão geral dos dados principais
+- Gestão de funis de vendas
+- Gestão de projetos vinculados a funis
+- Gestão de tarefas vinculadas a projetos
+- Gestão de contatos vinculados a projetos
+- Documentação automática via Swagger
+- Validação de entrada com class-validator e ValidationPipe global
 
-POST /auth/register -> 201. Retorna { user: PublicAccount, token: string }. O usuário público vem de account.ts:1.
-POST /auth/login -> 200. Retorna { user: PublicAccount, token: string }.
-GET /auth/me -> 200. Retorna { user: PublicAccount } ou 401 se não autenticado.
-POST /auth/logout -> 204, ou 200 com { success: true }.
-Dashboard:
+## Funcionalidades
 
-GET /dashboard/overview?accountId=... -> 200. Retorna { stats: StatCard[], funnel: { stages: FunnelStage[], growthPercent: number }, todayTasks: { tasks: Task[], pendingCount: number } }. O formato está em dashboard.ts:1 e o serviço atual em dashboardService.ts:1.
-Funis:
+### Autenticação
 
-GET /funnels?accountId=... -> 200. Retorna Funnel[] ordenado por position.
-GET /funnels/:id -> 200. Retorna Funnel ou 404.
-POST /funnels -> 201. Entra { name, color, accountId } e sai o Funnel criado.
-PATCH /funnels/:id -> 200. Retorna o Funnel atualizado, aceitando name e/ou color.
-PATCH /funnels/reorder -> 204. Entrada: orderedIds: string[].
-Opcional: DELETE /funnels/:id -> 204, se você quiser permitir exclusão.
-Projetos:
+- `POST /auth/sign-up` cria uma nova conta
+- `POST /auth/sign-in` autentica o usuário
+- `POST /auth/sign-out` encerra a sessão atual
+- `GET /auth/profile` retorna os dados do usuário autenticado
+- `POST /auth/refresh` gera um novo access token usando o refresh token
 
-GET /projects?accountId=... -> 200. Retorna Project[].
-GET /projects/:id -> 200. Retorna Project ou 404.
-GET /funnels/:funnelId/projects -> 200. Retorna Project[] daquela coluna/funil.
-GET /projects/:id/details -> 200. Retorna { project: Project, tasks: Task[] }.
-POST /projects -> 201. Entrada: CreateProjectInput + accountId implícito pela sessão; retorno: Project.
-PATCH /projects/:id -> 200. Retorna Project atualizado.
-PATCH /projects/:id/move -> 200. Entrada: { funnelId, position }; retorno: Project movido.
-PATCH /projects/reorder -> 204. Entrada: [{ id, funnelId, position }].
-DELETE /projects/:id -> 204.
-Tarefas:
+### Dashboard
 
-GET /tasks?accountId=... -> 200. Retorna Task[].
-GET /projects/:projectId/tasks -> 200. Retorna Task[] do projeto.
-POST /tasks -> 201. Entrada: dados da tarefa sem id, createdAt, updatedAt e completedAt; retorno: Task.
-PATCH /tasks/:id -> 200. Retorna Task atualizada.
-PATCH /tasks/:id/status -> 200. Entrada: { status: "pending" | "in_progress" | "completed" }; retorno: Task.
-Opcional: DELETE /tasks/:id -> 204.
-Contatos:
+- `GET /dashboard/overview` retorna os indicadores principais da conta autenticada
 
-GET /contacts?projectId=... -> 200. Retorna Contact[].
-POST /contacts -> 201. Entrada: CreateContactInput; retorno: Contact.
-PATCH /contacts/:id -> 200. Retorna Contact atualizado.
-DELETE /contacts/:id -> 204
+### Funis
+
+- `GET /funnels` lista os funis da conta
+- `GET /funnels/:id` busca um funil por id
+- `GET /funnels/:id/projects` lista os projetos de um funil
+- `POST /funnels` cria um novo funil
+- `PUT /funnels/:id` atualiza um funil
+- `PATCH /funnels/:id/position` atualiza a posição do funil
+- `DELETE /funnels/:id` remove um funil
+
+### Projetos
+
+- `GET /projects` lista os projetos da conta
+- `GET /projects/:id` busca um projeto por id
+- `GET /projects/:id/details` retorna detalhes do projeto com funil, tarefas e contatos
+- `POST /projects` cria um novo projeto
+- `PATCH /projects/:id` atualiza um projeto
+- `PATCH /projects/:id/position` atualiza a posição do projeto
+- `PATCH /projects/:id/status` atualiza o status do projeto
+- `DELETE /projects/:id` remove um projeto
+
+### Tarefas
+
+- `GET /tasks` lista as tarefas da conta
+- `GET /tasks/today` lista as tarefas de hoje
+- `GET /tasks/:id` busca uma tarefa por id
+- `POST /tasks` cria uma nova tarefa
+- `PATCH /tasks/:id` atualiza uma tarefa
+- `PATCH /tasks/:id/status` atualiza apenas o status da tarefa
+- `DELETE /tasks/:id` remove uma tarefa
+
+### Contatos
+
+- `GET /contacts` lista os contatos da conta
+- `GET /contacts/search?q=...` pesquisa contatos por nome, e-mail ou telefone
+- `GET /contacts/projects/:projectId` lista contatos de um projeto
+- `GET /contacts/:id` busca um contato por id
+- `POST /contacts` cria um novo contato
+- `PATCH /contacts/:id` atualiza um contato
+- `DELETE /contacts/:id` remove um contato
 
 ## Requisitos
 
 - Node.js 18 ou superior
 - npm
+- PostgreSQL
+
+## Variáveis de ambiente
+
+O projeto utiliza as seguintes variáveis:
+
+- `DATABASE_URL` conexão com o banco PostgreSQL
+- `SECRET_KEY` chave usada na assinatura dos tokens JWT
+- `PORT` porta da aplicação, opcional
+
+Exemplo de arquivo `.env`:
+
+```env
+DATABASE_URL="postgresql://user:password@localhost:5432/crm_pro"
+SECRET_KEY="your-secret-key"
+PORT=3000
+```
 
 ## Instalação
 
 ```bash
 npm install
+```
+
+## Banco de dados
+
+Gere o client do Prisma e aplique as migrations de desenvolvimento:
+
+```bash
+npm run prisma:generate
+npm run migrate
+```
+
+Se quiser apenas aplicar migrations em ambiente de teste:
+
+```bash
+npm run test:migrate
 ```
 
 ## Execução
@@ -66,27 +120,68 @@ npm install
 # desenvolvimento
 npm run start:dev
 
-# produção
+# build
 npm run build
+
+# produção
 npm run start:prod
 ```
+
+A API sobe por padrão em `http://localhost:3000`, ou na porta definida em `PORT`.
+
+## Swagger
+
+A documentação interativa fica disponível em:
+
+```text
+http://localhost:3000/api
+```
+
+No Swagger você encontra:
+
+- descrição dos endpoints
+- schemas dos DTOs
+- parâmetros de rota e query
+- autenticação via Bearer token
+
+Para testar rotas protegidas, use o botão `Authorize` e informe o access token gerado no login.
+
+## Autenticação e fluxo de uso
+
+1. Crie uma conta com `POST /auth/sign-up`.
+2. Faça login em `POST /auth/sign-in`.
+3. Use o `accessToken` no header `Authorization: Bearer <token>`.
+4. O refresh token é mantido em cookie httpOnly para renovar a sessão.
+5. Para testar via Swagger, clique em `Authorize` e cole o bearer token.
 
 ## Testes
 
 ```bash
 npm run test
-npm run test:e2e
 npm run test:cov
+npm run test:e2e
 ```
 
-## Estrutura básica
+## Estrutura principal
 
-- `src/main.ts`: inicialização da aplicação
+- `src/main.ts`: bootstrap da aplicação e configuração do Swagger
 - `src/app.module.ts`: módulo raiz
-- `src/app.controller.ts`: rota principal
-- `src/app.service.ts`: serviço com a resposta padrão
+- `src/auth`: autenticação e sessões
+- `src/dashboard`: indicadores da conta
+- `src/funnel`: funis de vendas
+- `src/project`: projetos
+- `src/task`: tarefas
+- `src/contact`: contatos
+- `src/prisma`: integração com Prisma
+- `prisma/schema.prisma`: schema do banco
 
-## Documentação
+## Observações
+
+- Os campos sensíveis ou formatados, como telefone, são normalizados antes de persistir no banco.
+- Os DTOs usam validação e metadados do Swagger para documentação automática.
+- A rota raiz `/` não faz parte da API; a documentação fica em `/api`.
+
+## Documentação adicional
 
 - [Modelagem do projeto](documents/modelagem.md)
 

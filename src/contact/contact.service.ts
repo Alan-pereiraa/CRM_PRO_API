@@ -3,6 +3,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
 
+function removeMask(value: string) {
+  return value.replace(/\D/g, '');
+}
+
+function normalizeSearchDigits(value: string) {
+  return value.replace(/\D/g, '');
+}
+
 @Injectable()
 export class ContactService {
   constructor(private readonly prisma: PrismaService) {}
@@ -35,6 +43,8 @@ export class ContactService {
   }
 
   searchContacts(accountId: string, query: string) {
+    const digitsOnlyQuery = normalizeSearchDigits(query);
+
     return this.prisma.contact.findMany({
       where: {
         project: {
@@ -43,7 +53,16 @@ export class ContactService {
         OR: [
           { name: { contains: query, mode: 'insensitive' } },
           { email: { contains: query, mode: 'insensitive' } },
-          { phone: { contains: query, mode: 'insensitive' } },
+          ...(digitsOnlyQuery
+            ? [
+                {
+                  phone: {
+                    contains: digitsOnlyQuery,
+                    mode: 'insensitive' as const,
+                  },
+                },
+              ]
+            : []),
         ],
       },
     });
@@ -62,6 +81,10 @@ export class ContactService {
 
   async createContact(contactData: CreateContactDto, accountId: string) {
     const { projectId, ...data } = contactData;
+    const normalizedData = {
+      ...data,
+      phone: removeMask(data.phone),
+    };
 
     const project = await this.prisma.project.findFirst({
       where: {
@@ -76,7 +99,7 @@ export class ContactService {
 
     return this.prisma.contact.create({
       data: {
-        ...data,
+        ...normalizedData,
         project: {
           connect: { id: projectId },
         },
@@ -103,6 +126,10 @@ export class ContactService {
     }
 
     const { projectId, ...data } = contactData;
+    const normalizedData = {
+      ...data,
+      ...(data.phone !== undefined && { phone: removeMask(data.phone) }),
+    };
 
     if (projectId) {
       const project = await this.prisma.project.findFirst({
@@ -119,7 +146,7 @@ export class ContactService {
       return this.prisma.contact.update({
         where: { id },
         data: {
-          ...data,
+          ...normalizedData,
           project: {
             connect: { id: projectId },
           },
@@ -129,7 +156,7 @@ export class ContactService {
 
     return this.prisma.contact.update({
       where: { id },
-      data,
+      data: normalizedData,
     });
   }
 
