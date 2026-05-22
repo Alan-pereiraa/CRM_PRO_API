@@ -8,6 +8,14 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.enableCors({
+    origin: process.env.FRONTEND_URL ?? [
+      'http://localhost:3000',
+      'http://localhost:3001',
+    ],
+    credentials: true,
+  });
+
   const config = new DocumentBuilder()
     .setTitle('CRM Pro API')
     .setDescription('API para CRM Pro')
