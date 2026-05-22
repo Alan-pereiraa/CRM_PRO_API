@@ -7,6 +7,7 @@ import { SignInDto } from './dto/sign-in.dto';
 import { SignUpDto } from './dto/sign-up.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
+import { FunnelService } from '../funnel/funnel.service';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -14,6 +15,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private funnelService: FunnelService,
   ) {}
 
   async generateToken(accountId: string, sessionId: string) {
@@ -48,6 +50,8 @@ export class AuthService {
         password_hash,
       },
     });
+
+    await this.funnelService.createDefaultsForAccount(newUser.id);
 
     const session = await this.prisma.session.create({
       data: {

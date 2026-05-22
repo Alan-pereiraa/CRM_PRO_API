@@ -12,6 +12,7 @@ import { JwtModule } from '@nestjs/jwt';
     PrismaModule
   ],
   controllers: [FunnelController],
-  providers: [FunnelService, JwtModule],
+  providers: [FunnelService],
+  exports: [FunnelService],
 })
 export class FunnelModule {}
