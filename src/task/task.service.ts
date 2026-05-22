@@ -64,8 +64,12 @@ export class TaskService {
     if (!project) {
       throw new NotFoundException('Projeto não encontrado');
     }
+    const { dueDate, ...rest } = taskData;
     return await this.prisma.task.create({
-      data: taskData,
+      data: {
+        ...rest,
+        ...(dueDate ? { dueDate: new Date(dueDate) } : {}),
+      },
     });
   }
 
@@ -81,9 +85,15 @@ export class TaskService {
     if (!task) {
       throw new NotFoundException('Tarefa não encontrada');
     }
+    const { dueDate, ...rest } = taskData;
     return await this.prisma.task.update({
       where: { id },
-      data: taskData,
+      data: {
+        ...rest,
+        ...(dueDate !== undefined
+          ? { dueDate: dueDate ? new Date(dueDate) : null }
+          : {}),
+      },
     });
   }
 

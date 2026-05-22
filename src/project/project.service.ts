@@ -40,10 +40,11 @@ export class ProjectService {
   }
 
   async createProject(payload: CreateProjectDto & { accountId: string }) {
-    const { funnelId, accountId, ...data } = payload;
+    const { funnelId, accountId, deadline, ...data } = payload;
     return await this.prisma.project.create({
       data: {
         ...data,
+        ...(deadline ? { deadline: new Date(deadline) } : {}),
         funnel: {
           connect: { id: funnelId },
         },
@@ -58,11 +59,14 @@ export class ProjectService {
     id: string,
     payload: Partial<CreateProjectDto> & { accountId: string },
   ) {
-    const { funnelId, accountId, ...data } = payload;
+    const { funnelId, accountId, deadline, ...data } = payload;
     return await this.prisma.project.update({
       where: { id, accountId },
       data: {
         ...data,
+        ...(deadline !== undefined
+          ? { deadline: deadline ? new Date(deadline) : null }
+          : {}),
         ...(funnelId && { funnel: { connect: { id: funnelId } } }),
       },
     });
