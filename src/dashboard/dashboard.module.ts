@@ -10,7 +10,7 @@ import { JwtModule } from '@nestjs/jwt';
     JwtModule.register({
       secret: process.env.SECRET_KEY,
     }),
-    PrismaModule
+    PrismaModule,
   ],
   controllers: [DashboardController],
   providers: [DashboardService, JwtAuthGuard],
