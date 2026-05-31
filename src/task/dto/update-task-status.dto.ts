@@ -4,6 +4,6 @@ import { StatusTask } from '../../../generated/prisma/enums';
 
 export class UpdateTaskStatusDto {
   @ApiProperty({ enum: StatusTask })
-  @IsEnum(StatusTask)
+  @IsEnum(StatusTask, { message: 'Status inválido' })
   status!: StatusTask;
 }

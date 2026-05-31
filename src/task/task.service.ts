@@ -28,9 +28,11 @@ export class TaskService {
         },
       },
     });
+
     if (!task) {
       throw new NotFoundException('Tarefa não encontrada');
     }
+
     return task;
   }
 
@@ -61,16 +63,16 @@ export class TaskService {
         accountId,
       },
     });
+
     if (!project) {
       throw new NotFoundException('Projeto não encontrado');
     }
-    const { dueDate, ...rest } = taskData;
-    return await this.prisma.task.create({
-      data: {
-        ...rest,
-        ...(dueDate ? { dueDate: new Date(dueDate) } : {}),
-      },
+
+    const task = await this.prisma.task.create({
+      data: taskData,
     });
+
+    return task;
   }
 
   async updateTask(id: string, taskData: UpdateTaskDto, accountId: string) {
@@ -82,11 +84,12 @@ export class TaskService {
         },
       },
     });
+
     if (!task) {
       throw new NotFoundException('Tarefa não encontrada');
     }
-    const { dueDate, ...rest } = taskData;
-    return await this.prisma.task.update({
+
+    const updatedTask = await this.prisma.task.update({
       where: { id },
       data: {
         ...rest,
@@ -95,6 +98,8 @@ export class TaskService {
           : {}),
       },
     });
+
+    return updatedTask;
   }
 
   async updateTaskStatus(id: string, status: StatusTask, accountId: string) {
@@ -106,13 +111,17 @@ export class TaskService {
         },
       },
     });
+
     if (!task) {
       throw new NotFoundException('Tarefa não encontrada');
     }
-    return await this.prisma.task.update({
+
+    const updatedTask = await this.prisma.task.update({
       where: { id },
       data: { status },
     });
+
+    return updatedTask;
   }
 
   async deleteTask(id: string, accountId: string) {
@@ -124,9 +133,11 @@ export class TaskService {
         },
       },
     });
+
     if (!task) {
       throw new NotFoundException('Tarefa não encontrada');
     }
+    
     return await this.prisma.task.delete({
       where: { id },
     });

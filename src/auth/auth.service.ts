@@ -1,6 +1,7 @@
 import {
   Injectable,
   NotFoundException,
+  ConflictException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { SignInDto } from './dto/sign-in.dto';
@@ -9,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { FunnelService } from '../funnel/funnel.service';
 import * as bcrypt from 'bcrypt';
+import { randomUUID } from 'node:crypto';
 
 @Injectable()
 export class AuthService {
@@ -43,6 +45,14 @@ export class AuthService {
   async signUp(payload: SignUpDto) {
     const password_hash = await bcrypt.hash(payload.password, 10);
 
+    const existingUser = await this.prisma.account.findUnique({
+      where: { email: payload.email },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('Email já está em uso');
+    }
+
     const newUser = await this.prisma.account.create({
       data: {
         name: payload.name,
@@ -51,25 +61,30 @@ export class AuthService {
       },
     });
 
-    await this.funnelService.createDefaultsForAccount(newUser.id);
+    if (!newUser) {
+      throw new NotFoundException('Erro ao criar usuário');
+    }
 
-    const session = await this.prisma.session.create({
-      data: {
-        accountId: newUser.id,
-      },
-    });
+    const sessionId = randomUUID();
 
     const { accessToken, refreshToken } = await this.generateToken(
       newUser.id,
-      session.id,
+      sessionId,
     );
-
+    
     const tokenHash = await bcrypt.hash(refreshToken, 10);
-
-    await this.prisma.session.update({
-      where: { id: session.id },
-      data: { token_hash: tokenHash },
+    
+    const session = await this.prisma.session.create({
+      data: {
+        id: sessionId,
+        accountId: newUser.id,
+        token_hash: tokenHash,
+      },
     });
+    
+    if (!session) {
+      throw new NotFoundException('Erro ao criar sessão');
+    }
 
     return {
       account: {
@@ -98,23 +113,26 @@ export class AuthService {
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
-    const session = await this.prisma.session.create({
-      data: {
-        accountId: user.id,
-      },
-    });
+    const sessionId = randomUUID();
 
     const { accessToken, refreshToken } = await this.generateToken(
       user.id,
-      session.id,
+      sessionId,
     );
-
+    
     const tokenHash = await bcrypt.hash(refreshToken, 10);
-
-    await this.prisma.session.update({
-      where: { id: session.id },
-      data: { token_hash: tokenHash },
+    
+    const session = await this.prisma.session.create({
+      data: {
+        id: sessionId,
+        accountId: user.id,
+        token_hash: tokenHash,
+      },
     });
+
+    if (!session) {
+      throw new NotFoundException('Erro ao criar sessão');
+    }
 
     return {
       account: {
@@ -221,12 +239,18 @@ export class AuthService {
     const { accessToken, refreshToken: newRefreshToken } =
       await this.generateToken(accountId, session.id);
 
-    await this.prisma.session.update({
+    const newTokenHash = await bcrypt.hash(newRefreshToken, 10);
+
+    const updatedSession = await this.prisma.session.update({
       where: { id: session.id },
       data: {
-        token_hash: await bcrypt.hash(newRefreshToken, 10),
+        token_hash: newTokenHash,
       },
     });
+
+    if (!updatedSession) {
+      throw new NotFoundException('Erro ao atualizar sessão');
+    }
 
     return { accessToken, refreshToken: newRefreshToken };
   }

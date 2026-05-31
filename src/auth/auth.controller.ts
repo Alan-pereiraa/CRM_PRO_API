@@ -7,7 +7,7 @@ import {
   Request,
   UseGuards,
   Res,
-  Req,
+  Req
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -49,6 +49,7 @@ export class AuthController {
   })
   @ApiOkResponse({ description: 'Conta criada com sucesso.' })
   async signUp(@Body() payload: SignUpDto, @Res({ passthrough: true }) res) {
+    
     const { account, accessToken, refreshToken } =
       await this.authService.signUp(payload);
 
@@ -103,7 +104,8 @@ export class AuthController {
   })
   @ApiOkResponse({ description: 'Perfil retornado com sucesso.' })
   async getProfile(@Request() req) {
-    return this.authService.getProfile(req.account.id);
+    const accountId = req.account.id;
+    return this.authService.getProfile(accountId);
   }
 
   @Post('refresh')
@@ -115,6 +117,7 @@ export class AuthController {
   @ApiOkResponse({ description: 'Access token renovado com sucesso.' })
   async refreshToken(@Req() req, @Res({ passthrough: true }) res) {
     const refreshToken = req.cookies.refreshToken;
+    
     const { accessToken, refreshToken: newRefreshToken } =
       await this.authService.refreshToken(refreshToken);
 

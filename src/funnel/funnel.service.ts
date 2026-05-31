@@ -79,10 +79,16 @@ export class FunnelService {
       throw new NotFoundException('Funil não encontrado');
     }
 
-    return this.prisma.funnel.update({
+    const updatedFunnel = await this.prisma.funnel.update({
       where: { id },
       data: payload,
     });
+
+    if (!updatedFunnel) {
+      throw new NotFoundException('Erro ao atualizar funil');
+    }
+    
+    return updatedFunnel;
   }
 
   async updateFunnelPosition(id: string, accountId: string, position: number) {
@@ -94,10 +100,16 @@ export class FunnelService {
       throw new NotFoundException('Funil não encontrado');
     }
 
-    return this.prisma.funnel.update({
+    const updatedFunnel = await this.prisma.funnel.update({
       where: { id },
       data: { position },
     });
+
+    if (!updatedFunnel) {
+      throw new NotFoundException('Erro ao atualizar posição do funil');
+    }
+
+    return updatedFunnel;
   }
 
   async deleteFunnel(id: string, accountId: string) {
@@ -109,7 +121,7 @@ export class FunnelService {
       throw new NotFoundException('Funil não encontrado');
     }
 
-    return this.prisma.funnel.delete({
+    return await this.prisma.funnel.delete({
       where: { id },
     });
   }

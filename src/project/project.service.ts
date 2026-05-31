@@ -18,9 +18,11 @@ export class ProjectService {
     const project = await this.prisma.project.findFirst({
       where: { id, accountId },
     });
+
     if (!project) {
       throw new NotFoundException('Projeto não encontrado');
     }
+
     return project;
   }
 
@@ -33,15 +35,18 @@ export class ProjectService {
         contacts: true,
       },
     });
+
     if (!project) {
       throw new NotFoundException('Projeto não encontrado');
     }
+
     return project;
   }
 
   async createProject(payload: CreateProjectDto & { accountId: string }) {
-    const { funnelId, accountId, deadline, ...data } = payload;
-    return await this.prisma.project.create({
+    const { funnelId, accountId, ...data } = payload;
+
+    const project = await this.prisma.project.create({
       data: {
         ...data,
         ...(deadline ? { deadline: new Date(deadline) } : {}),
@@ -53,14 +58,20 @@ export class ProjectService {
         },
       },
     });
+
+    if (!project) {
+      throw new NotFoundException('Erro ao criar projeto');
+    }
+
+    return project;
   }
 
   async updateProject(
     id: string,
     payload: Partial<CreateProjectDto> & { accountId: string },
   ) {
-    const { funnelId, accountId, deadline, ...data } = payload;
-    return await this.prisma.project.update({
+    const { funnelId, accountId, ...data } = payload;
+    const project = await this.prisma.project.update({
       where: { id, accountId },
       data: {
         ...data,
@@ -70,13 +81,25 @@ export class ProjectService {
         ...(funnelId && { funnel: { connect: { id: funnelId } } }),
       },
     });
+
+    if (!project) {
+      throw new NotFoundException('Erro ao atualizar projeto');
+    }
+
+    return project;
   }
 
   async updateProjectPosition(id: string, position: number, accountId: string) {
-    return await this.prisma.project.update({
+    const project = await this.prisma.project.update({
       where: { id, accountId },
       data: { position },
     });
+
+    if (!project) {
+      throw new NotFoundException('Erro ao atualizar posição do projeto');
+    }
+
+    return project;
   }
 
   async updateProjectStatus(
@@ -84,10 +107,16 @@ export class ProjectService {
     status: StatusProject,
     accountId: string,
   ) {
-    return await this.prisma.project.update({
+    const project = await this.prisma.project.update({
       where: { id, accountId },
       data: { status },
     });
+
+    if (!project) {
+      throw new NotFoundException('Erro ao atualizar status do projeto');
+    }
+
+    return project;
   }
 
   async deleteProject(id: string, accountId: string) {
