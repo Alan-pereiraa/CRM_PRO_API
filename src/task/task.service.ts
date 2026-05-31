@@ -91,7 +91,12 @@ export class TaskService {
 
     const updatedTask = await this.prisma.task.update({
       where: { id },
-      data: taskData,
+      data: {
+        ...rest,
+        ...(dueDate !== undefined
+          ? { dueDate: dueDate ? new Date(dueDate) : null }
+          : {}),
+      },
     });
 
     return updatedTask;

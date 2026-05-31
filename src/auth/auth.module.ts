@@ -4,13 +4,15 @@ import { AuthController } from './auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
+import { FunnelModule } from '../funnel/funnel.module';
 
 @Module({
   imports: [
     JwtModule.register({
       secret: process.env.SECRET_KEY,
     }),
-    PrismaModule
+    PrismaModule,
+    FunnelModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtAuthGuard],

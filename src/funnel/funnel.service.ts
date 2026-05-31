@@ -3,9 +3,27 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateFunnelDto } from './dto/create-funnel.dto';
 import { UpdateFunnelDto } from './dto/update.funnel.dto';
 
+const DEFAULT_FUNNELS: ReadonlyArray<{
+  name: string;
+  position: number;
+  color: string;
+}> = [
+  { name: 'Lead', position: 0, color: '#3B82F6' },
+  { name: 'Contato', position: 1, color: '#8B5CF6' },
+  { name: 'Proposta', position: 2, color: '#F59E0B' },
+  { name: 'Negociação', position: 3, color: '#EF4444' },
+  { name: 'Fechado', position: 4, color: '#10B981' },
+];
+
 @Injectable()
 export class FunnelService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async createDefaultsForAccount(accountId: string): Promise<void> {
+    await this.prisma.funnel.createMany({
+      data: DEFAULT_FUNNELS.map((seed) => ({ ...seed, accountId })),
+    });
+  }
 
   getFunnels(accountId: string) {
     return this.prisma.funnel.findMany({

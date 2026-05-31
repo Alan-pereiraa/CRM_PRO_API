@@ -49,6 +49,7 @@ export class ProjectService {
     const project = await this.prisma.project.create({
       data: {
         ...data,
+        ...(deadline ? { deadline: new Date(deadline) } : {}),
         funnel: {
           connect: { id: funnelId },
         },
@@ -74,6 +75,9 @@ export class ProjectService {
       where: { id, accountId },
       data: {
         ...data,
+        ...(deadline !== undefined
+          ? { deadline: deadline ? new Date(deadline) : null }
+          : {}),
         ...(funnelId && { funnel: { connect: { id: funnelId } } }),
       },
     });

@@ -7,9 +7,9 @@ import { PrismaModule } from 'src/prisma/prisma.module';
 @Module({
   imports: [
     JwtModule.register({
-      secret: process.env.JWT_SECRET
+      secret: process.env.JWT_SECRET,
     }),
-    PrismaModule
+    PrismaModule,
   ],
   controllers: [ContactController],
   providers: [ContactService],

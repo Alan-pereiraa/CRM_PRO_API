@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
+import { FunnelService } from '../funnel/funnel.service';
 import * as bcrypt from 'bcrypt';
 
 jest.mock('bcrypt', () => ({
@@ -31,6 +32,10 @@ describe('AuthService', () => {
     verify: jest.fn(),
   };
 
+  const funnelServiceMock = {
+    createDefaultsForAccount: jest.fn().mockResolvedValue(undefined),
+  };
+
   const hashMock = bcrypt.hash as jest.MockedFunction<typeof bcrypt.hash>;
   const compareMock = bcrypt.compare as jest.MockedFunction<
     typeof bcrypt.compare
@@ -42,6 +47,7 @@ describe('AuthService', () => {
         AuthService,
         { provide: PrismaService, useValue: prismaMock },
         { provide: JwtService, useValue: jwtMock },
+        { provide: FunnelService, useValue: funnelServiceMock },
       ],
     }).compile();
 

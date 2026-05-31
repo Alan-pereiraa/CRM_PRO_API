@@ -9,7 +9,7 @@ import { JwtModule } from '@nestjs/jwt';
     JwtModule.register({
       secret: process.env.JWT_SECRET,
     }),
-    PrismaModule
+    PrismaModule,
   ],
   controllers: [TaskController],
   providers: [TaskService],
