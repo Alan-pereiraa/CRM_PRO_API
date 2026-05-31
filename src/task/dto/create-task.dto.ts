@@ -14,32 +14,32 @@ import { StatusTask, Priority } from '../../../generated/prisma/enums';
 
 export class CreateTaskDto {
   @ApiProperty({ example: 'Ligar para cliente' })
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'O título deve ser uma string' })
+  @IsNotEmpty({ message: 'O título é obrigatório' })
   title!: string;
 
   @ApiPropertyOptional({ example: 'Follow-up após reunião' })
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'A descrição deve ser uma string' })
   description?: string;
 
   @ApiPropertyOptional({ enum: StatusTask })
   @IsOptional()
-  @IsEnum(StatusTask)
+  @IsEnum(StatusTask, { message: 'Status inválido' })
   status?: StatusTask;
 
   @ApiPropertyOptional({ enum: Priority })
   @IsOptional()
-  @IsEnum(Priority)
+  @IsEnum(Priority, { message: 'Prioridade inválida' })
   priority?: Priority;
 
   @ApiPropertyOptional({ example: '2026-05-30' })
   @IsOptional()
-  @IsDateString()
+  @IsDateString({}, { message: 'A data de entrega deve ser uma data válida' })
   dueDate?: string;
 
   @ApiProperty({ example: '8b6d5e5d-4f8a-4a40-9cf5-2f6c3d8f7f9b' })
   @IsUUID()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'O ID do projeto é obrigatório' })
   projectId!: string;
 }

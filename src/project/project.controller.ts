@@ -35,7 +35,8 @@ export class ProjectController {
   })
   @ApiOkResponse({ description: 'Lista de projetos retornada com sucesso.' })
   async getProjects(@Req() req) {
-    return await this.projectService.getProjects(req.account.id);
+    const accountId = req.account.id;
+    return await this.projectService.getProjects(accountId);
   }
 
   @Get(':id/details')
@@ -47,7 +48,8 @@ export class ProjectController {
   })
   @ApiOkResponse({ description: 'Detalhes do projeto retornados com sucesso.' })
   async getProjectDetails(@Req() req, @Param('id') id: string) {
-    return await this.projectService.getProjectDetails(id, req.account.id);
+    const accountId = req.account.id;
+    return await this.projectService.getProjectDetails(id, accountId);
   }
 
   @Get(':id')
@@ -59,7 +61,8 @@ export class ProjectController {
   })
   @ApiOkResponse({ description: 'Projeto retornado com sucesso.' })
   async getProjectById(@Req() req, @Param('id') id: string) {
-    return await this.projectService.getProjectById(id, req.account.id);
+    const accountId = req.account.id;
+    return await this.projectService.getProjectById(id, accountId);
   }
 
   @Post()
@@ -71,9 +74,10 @@ export class ProjectController {
   })
   @ApiOkResponse({ description: 'Projeto criado com sucesso.' })
   async createProject(@Req() req, @Body() projectData: CreateProjectDto) {
+    const accountId = req.account.id;
     return await this.projectService.createProject({
       ...projectData,
-      accountId: req.account.id,
+      accountId,
     });
   }
 

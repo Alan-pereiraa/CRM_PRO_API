@@ -36,7 +36,8 @@ export class ContactController {
   })
   @ApiOkResponse({ description: 'Lista de contatos retornada com sucesso.' })
   getContacts(@Req() req) {
-    return this.contactService.getContacts(req.account.id);
+    const accountId = req.account.id;
+    return this.contactService.getContacts(accountId);
   }
 
   @Get('/search')
@@ -52,7 +53,8 @@ export class ContactController {
       throw new BadRequestException('Parâmetro q é obrigatório');
     }
 
-    return this.contactService.searchContacts(req.account.id, query);
+    const accountId = req.account.id;
+    return this.contactService.searchContacts(accountId, query);
   }
 
   @Get('/projects/:projectId')
@@ -64,7 +66,8 @@ export class ContactController {
   })
   @ApiOkResponse({ description: 'Contatos do projeto retornados com sucesso.' })
   getContactsByProject(@Param('projectId') projectId: string, @Req() req) {
-    return this.contactService.getContactsByProject(projectId, req.account.id);
+    const accountId = req.account.id;
+    return this.contactService.getContactsByProject(projectId, accountId);
   }
 
   @Get('/:id')
@@ -76,7 +79,8 @@ export class ContactController {
   })
   @ApiOkResponse({ description: 'Contato retornado com sucesso.' })
   getContact(@Param('id') id: string, @Req() req) {
-    return this.contactService.getContact(id, req.account.id);
+    const accountId = req.account.id;
+    return this.contactService.getContact(id, accountId);
   }
 
   @Post('/')
@@ -88,7 +92,8 @@ export class ContactController {
   })
   @ApiOkResponse({ description: 'Contato criado com sucesso.' })
   createContact(@Body() contactData: CreateContactDto, @Req() req) {
-    return this.contactService.createContact(contactData, req.account.id);
+    const accountId = req.account.id;
+    return this.contactService.createContact(contactData, accountId);
   }
 
   @Patch('/:id')
@@ -104,7 +109,8 @@ export class ContactController {
     @Body() contactData: UpdateContactDto,
     @Req() req,
   ) {
-    return this.contactService.updateContact(id, contactData, req.account.id);
+    const accountId = req.account.id;
+    return this.contactService.updateContact(id, contactData, accountId);
   }
 
   @Delete('/:id')
@@ -116,6 +122,7 @@ export class ContactController {
   })
   @ApiOkResponse({ description: 'Contato excluído com sucesso.' })
   deleteContact(@Param('id') id: string, @Req() req) {
-    return this.contactService.deleteContact(id, req.account.id);
+    const accountId = req.account.id;
+    return this.contactService.deleteContact(id, accountId);
   }
 }

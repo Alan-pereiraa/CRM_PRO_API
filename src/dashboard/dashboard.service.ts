@@ -6,15 +6,6 @@ export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getOverView(accountId: string) {
-    const existingAccount = await this.prisma.account.findUnique({
-      where: {
-        id: accountId,
-      },
-    });
-
-    if (!existingAccount) {
-      throw new NotFoundException('A conta não foi encontrada');
-    }
 
     const projects = await this.prisma.project.findMany({
       where: {

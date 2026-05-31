@@ -26,6 +26,7 @@ export class ContactService {
   }
 
   async getContact(id: string, accountId: string) {
+
     const contact = await this.prisma.contact.findFirst({
       where: {
         id,
@@ -69,6 +70,17 @@ export class ContactService {
   }
 
   getContactsByProject(projectId: string, accountId: string) {
+    const project = this.prisma.project.findFirst({
+      where: {
+        id: projectId,
+        accountId,
+      },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Projeto não encontrado');
+    }
+
     return this.prisma.contact.findMany({
       where: {
         projectId,
@@ -81,6 +93,7 @@ export class ContactService {
 
   async createContact(contactData: CreateContactDto, accountId: string) {
     const { projectId, ...data } = contactData;
+
     const normalizedData = {
       ...data,
       phone: removeMask(data.phone),
@@ -97,7 +110,7 @@ export class ContactService {
       throw new NotFoundException('Projeto não encontrado');
     }
 
-    return this.prisma.contact.create({
+    const contact = await this.prisma.contact.create({
       data: {
         ...normalizedData,
         project: {
@@ -105,6 +118,8 @@ export class ContactService {
         },
       },
     });
+
+    return contact;
   }
 
   async updateContact(
@@ -154,10 +169,16 @@ export class ContactService {
       });
     }
 
-    return this.prisma.contact.update({
+    const contactUpdated = await this.prisma.contact.update({
       where: { id },
       data: normalizedData,
     });
+
+    if (!contactUpdated) {
+      throw new NotFoundException('Erro ao atualizar contato');
+    }
+
+    return contactUpdated;
   }
 
   async deleteContact(id: string, accountId: string) {
@@ -174,8 +195,6 @@ export class ContactService {
       throw new NotFoundException('Contato não encontrado');
     }
 
-    return this.prisma.contact.delete({
-      where: { id },
-    });
+    return await this.prisma.contact.delete({ where: { id } });
   }
 }

@@ -48,7 +48,8 @@ export class TaskController {
   })
   @ApiOkResponse({ description: 'Tarefas de hoje retornadas com sucesso.' })
   async getTodayTasks(@Req() req) {
-    return await this.taskService.getTodayTasks(req.account.id);
+    const accountId = req.account.id;
+    return await this.taskService.getTodayTasks(accountId);
   }
 
   @Get(':id')
@@ -60,7 +61,8 @@ export class TaskController {
   })
   @ApiOkResponse({ description: 'Tarefa retornada com sucesso.' })
   async getTask(@Req() req, @Param('id') id: string) {
-    return await this.taskService.getTask(id, req.account.id);
+    const accountId = req.account.id;
+    return await this.taskService.getTask(id, accountId);
   }
 
   @Post('/')
@@ -72,7 +74,8 @@ export class TaskController {
   })
   @ApiOkResponse({ description: 'Tarefa criada com sucesso.' })
   async createTask(@Req() req, @Body() taskData: CreateTaskDto) {
-    return await this.taskService.createTask(taskData, req.account.id);
+    const accountId = req.account.id;
+    return await this.taskService.createTask(taskData, accountId);
   }
 
   @Patch(':id')
@@ -88,7 +91,8 @@ export class TaskController {
     @Param('id') id: string,
     @Body() taskData: UpdateTaskDto,
   ) {
-    return await this.taskService.updateTask(id, taskData, req.account.id);
+    const accountId = req.account.id;
+    return await this.taskService.updateTask(id, taskData, accountId);
   }
 
   @Patch(':id/status')
@@ -104,10 +108,11 @@ export class TaskController {
     @Param('id') id: string,
     @Body() body: UpdateTaskStatusDto,
   ) {
+    const accountId = req.account.id;
     return await this.taskService.updateTaskStatus(
       id,
       body.status,
-      req.account.id,
+      accountId,
     );
   }
 
@@ -120,6 +125,7 @@ export class TaskController {
   })
   @ApiOkResponse({ description: 'Tarefa excluída com sucesso.' })
   async deleteTask(@Req() req, @Param('id') id: string) {
-    return await this.taskService.deleteTask(id, req.account.id);
+    const accountId = req.account.id;
+    return await this.taskService.deleteTask(id, accountId);
   }
 }

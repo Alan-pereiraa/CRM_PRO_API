@@ -35,7 +35,8 @@ export class FunnelController {
   })
   @ApiOkResponse({ description: 'Lista de funis retornada com sucesso.' })
   getFunnels(@Req() req) {
-    return this.funnelService.getFunnels(req.account.id);
+    const accountId = req.account.id;
+    return this.funnelService.getFunnels(accountId);
   }
 
   @Get(':id/projects')
@@ -47,7 +48,8 @@ export class FunnelController {
   })
   @ApiOkResponse({ description: 'Projetos do funil retornados com sucesso.' })
   getFunnelProjects(@Param('id') id: string, @Req() req) {
-    return this.funnelService.getFunnelProjects(id, req.account.id);
+    const accountId = req.account.id;
+    return this.funnelService.getFunnelProjects(id, accountId);
   }
 
   @Get(':id')
@@ -59,7 +61,8 @@ export class FunnelController {
   })
   @ApiOkResponse({ description: 'Funil retornado com sucesso.' })
   getFunnelById(@Param('id') id: string, @Req() req) {
-    return this.funnelService.getFunnelById(id, req.account.id);
+    const accountId = req.account.id;
+    return this.funnelService.getFunnelById(id, accountId);
   }
 
   @Post('/')
@@ -71,9 +74,10 @@ export class FunnelController {
   })
   @ApiOkResponse({ description: 'Funil criado com sucesso.' })
   createFunnel(@Req() req, @Body() funnelData: CreateFunnelDto) {
+    const accountId = req.account.id;
     const payload = {
       ...funnelData,
-      accountId: req.account.id,
+      accountId,
     };
 
     return this.funnelService.createFunnel(payload);
@@ -92,7 +96,8 @@ export class FunnelController {
     @Req() req,
     @Body() funnelData: UpdateFunnelDto,
   ) {
-    return this.funnelService.updateFunnel(id, req.account.id, funnelData);
+    const accountId = req.account.id;
+    return this.funnelService.updateFunnel(id, accountId, funnelData);
   }
 
   @Patch(':id/position')
@@ -108,9 +113,10 @@ export class FunnelController {
     @Req() req,
     @Body('position') position: number,
   ) {
+    const accountId = req.account.id;
     return this.funnelService.updateFunnelPosition(
       id,
-      req.account.id,
+      accountId,
       position,
     );
   }
@@ -124,6 +130,7 @@ export class FunnelController {
   })
   @ApiOkResponse({ description: 'Funil excluído com sucesso.' })
   deleteFunnel(@Param('id') id: string, @Req() req) {
-    return this.funnelService.deleteFunnel(id, req.account.id);
+    const accountId = req.account.id;
+    return this.funnelService.deleteFunnel(id, accountId);
   }
 }
