@@ -82,6 +82,9 @@ describe('AuthService', () => {
     } as any);
 
     expect(prismaMock.account.create).toHaveBeenCalled();
+    expect(funnelServiceMock.createDefaultsForAccount).toHaveBeenCalledWith(
+      'user-1',
+    );
     expect(prismaMock.session.create).toHaveBeenCalled();
     expect(prismaMock.session.update).toHaveBeenCalled();
     expect(result).toHaveProperty('accessToken');

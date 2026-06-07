@@ -7,7 +7,7 @@ import {
   IsString,
   IsUUID,
 } from 'class-validator';
-import { StatusTask, Priority } from '../../../generated/prisma/enums';
+import { StatusTask, Priority } from '@prisma/client';
 
 export class CreateTaskDto {
   @ApiProperty({ example: 'Ligar para cliente' })

@@ -87,7 +87,7 @@ export class FunnelService {
     if (!updatedFunnel) {
       throw new NotFoundException('Erro ao atualizar funil');
     }
-    
+
     return updatedFunnel;
   }
 

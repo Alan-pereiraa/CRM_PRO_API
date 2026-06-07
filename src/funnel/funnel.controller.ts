@@ -114,11 +114,7 @@ export class FunnelController {
     @Body('position') position: number,
   ) {
     const accountId = req.account.id;
-    return this.funnelService.updateFunnelPosition(
-      id,
-      accountId,
-      position,
-    );
+    return this.funnelService.updateFunnelPosition(id, accountId, position);
   }
 
   @Delete(':id')

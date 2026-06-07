@@ -109,11 +109,7 @@ export class TaskController {
     @Body() body: UpdateTaskStatusDto,
   ) {
     const accountId = req.account.id;
-    return await this.taskService.updateTaskStatus(
-      id,
-      body.status,
-      accountId,
-    );
+    return await this.taskService.updateTaskStatus(id, body.status, accountId);
   }
 
   @Delete(':id')

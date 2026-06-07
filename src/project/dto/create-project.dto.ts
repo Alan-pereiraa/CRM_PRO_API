@@ -9,7 +9,7 @@ import {
   IsString,
   IsUUID,
 } from 'class-validator';
-import { StatusProject, Priority } from '../../../generated/prisma/enums';
+import { StatusProject, Priority } from '@prisma/client';
 
 export class CreateProjectDto {
   @ApiProperty({ example: 'Projeto Alpha' })
@@ -34,7 +34,10 @@ export class CreateProjectDto {
 
   @ApiPropertyOptional({ example: 15000 })
   @IsOptional()
-  @IsNumber({ allowNaN: false, allowInfinity: false }, { message: 'O valor deve ser um número válido' })
+  @IsNumber(
+    { allowNaN: false, allowInfinity: false },
+    { message: 'O valor deve ser um número válido' },
+  )
   value?: number;
 
   @ApiPropertyOptional({ example: '2026-12-31' })

@@ -19,7 +19,7 @@ import { ProjectService } from './project.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
-import { StatusProject } from '../../generated/prisma/enums';
+import { StatusProject } from '@prisma/client';
 
 @ApiTags('projects')
 @Controller('projects')

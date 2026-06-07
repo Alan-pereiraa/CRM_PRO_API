@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
-import { StatusProject } from '../../generated/prisma/enums';
+import { StatusProject } from '@prisma/client';
 
 @Injectable()
 export class ProjectService {
@@ -44,7 +44,7 @@ export class ProjectService {
   }
 
   async createProject(payload: CreateProjectDto & { accountId: string }) {
-    const { funnelId, accountId, ...data } = payload;
+    const { funnelId, accountId, deadline, ...data } = payload;
 
     const project = await this.prisma.project.create({
       data: {
@@ -70,7 +70,7 @@ export class ProjectService {
     id: string,
     payload: Partial<CreateProjectDto> & { accountId: string },
   ) {
-    const { funnelId, accountId, ...data } = payload;
+    const { funnelId, accountId, deadline, ...data } = payload;
     const project = await this.prisma.project.update({
       where: { id, accountId },
       data: {

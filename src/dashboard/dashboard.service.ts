@@ -6,7 +6,6 @@ export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getOverView(accountId: string) {
-
     const projects = await this.prisma.project.findMany({
       where: {
         accountId,

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum } from 'class-validator';
-import { StatusTask } from '../../../generated/prisma/enums';
+import { StatusTask } from '@prisma/client';
 
 export class UpdateTaskStatusDto {
   @ApiProperty({ enum: StatusTask })

@@ -65,15 +65,17 @@ export class AuthService {
       throw new NotFoundException('Erro ao criar usuário');
     }
 
+    await this.funnelService.createDefaultsForAccount(newUser.id);
+
     const sessionId = randomUUID();
 
     const { accessToken, refreshToken } = await this.generateToken(
       newUser.id,
       sessionId,
     );
-    
+
     const tokenHash = await bcrypt.hash(refreshToken, 10);
-    
+
     const session = await this.prisma.session.create({
       data: {
         id: sessionId,
@@ -81,7 +83,7 @@ export class AuthService {
         token_hash: tokenHash,
       },
     });
-    
+
     if (!session) {
       throw new NotFoundException('Erro ao criar sessão');
     }
@@ -119,9 +121,9 @@ export class AuthService {
       user.id,
       sessionId,
     );
-    
+
     const tokenHash = await bcrypt.hash(refreshToken, 10);
-    
+
     const session = await this.prisma.session.create({
       data: {
         id: sessionId,

@@ -26,7 +26,6 @@ export class ContactService {
   }
 
   async getContact(id: string, accountId: string) {
-
     const contact = await this.prisma.contact.findFirst({
       where: {
         id,
