@@ -1,190 +1,155 @@
-# CRM Pro API
+# CRM PRO — API (Backend)
 
-API backend do CRM Pro desenvolvida com NestJS, Prisma e PostgreSQL.
+API REST do CRM PRO. Gerencia autenticação, funis de vendas, projetos (oportunidades), contatos, tarefas e métricas de dashboard.
 
-## Visão geral
+> Este repositório é um **submódulo** do wrapper de orquestração. Para subir o ambiente completo (API + frontend + banco) via Docker, consulte o README do repositório raiz.
 
-Esta API centraliza a operação de um CRM com foco em organização comercial e acompanhamento de pipeline. Ela oferece:
+## Especificações técnicas
 
-- Autenticação com JWT e sessão via refresh token em cookie httpOnly
-- Cadastro, login, logout, renovação de token e consulta de perfil
-- Dashboard com visão geral dos dados principais
-- Gestão de funis de vendas
-- Gestão de projetos vinculados a funis
-- Gestão de tarefas vinculadas a projetos
-- Gestão de contatos vinculados a projetos
-- Documentação automática via Swagger
-- Validação de entrada com class-validator e ValidationPipe global
+| Item              | Tecnologia / Valor                          |
+|-------------------|---------------------------------------------|
+| Linguagem         | TypeScript                                  |
+| Framework         | NestJS 11                                   |
+| ORM               | Prisma 7 (adapter `@prisma/adapter-pg`)     |
+| Banco de dados    | PostgreSQL                                  |
+| Autenticação      | JWT (`@nestjs/jwt`) + cookies HttpOnly      |
+| Hash de senha     | bcrypt                                      |
+| Validação         | `class-validator` + `class-transformer`     |
+| Documentação      | Swagger / OpenAPI (`@nestjs/swagger`)       |
+| Porta padrão      | `3000`                                      |
+| Node              | 20+ recomendado                             |
 
-## Funcionalidades
+### Configurações globais (`src/main.ts`)
 
-### Autenticação
-
-- `POST /auth/sign-up` cria uma nova conta
-- `POST /auth/sign-in` autentica o usuário
-- `POST /auth/sign-out` encerra a sessão atual
-- `GET /auth/profile` retorna os dados do usuário autenticado
-- `POST /auth/refresh` gera um novo access token usando o refresh token
-
-### Dashboard
-
-- `GET /dashboard/overview` retorna os indicadores principais da conta autenticada
-
-### Funis
-
-- `GET /funnels` lista os funis da conta
-- `GET /funnels/:id` busca um funil por id
-- `GET /funnels/:id/projects` lista os projetos de um funil
-- `POST /funnels` cria um novo funil
-- `PUT /funnels/:id` atualiza um funil
-- `PATCH /funnels/:id/position` atualiza a posição do funil
-- `DELETE /funnels/:id` remove um funil
-
-### Projetos
-
-- `GET /projects` lista os projetos da conta
-- `GET /projects/:id` busca um projeto por id
-- `GET /projects/:id/details` retorna detalhes do projeto com funil, tarefas e contatos
-- `POST /projects` cria um novo projeto
-- `PATCH /projects/:id` atualiza um projeto
-- `PATCH /projects/:id/position` atualiza a posição do projeto
-- `PATCH /projects/:id/status` atualiza o status do projeto
-- `DELETE /projects/:id` remove um projeto
-
-### Tarefas
-
-- `GET /tasks` lista as tarefas da conta
-- `GET /tasks/today` lista as tarefas de hoje
-- `GET /tasks/:id` busca uma tarefa por id
-- `POST /tasks` cria uma nova tarefa
-- `PATCH /tasks/:id` atualiza uma tarefa
-- `PATCH /tasks/:id/status` atualiza apenas o status da tarefa
-- `DELETE /tasks/:id` remove uma tarefa
-
-### Contatos
-
-- `GET /contacts` lista os contatos da conta
-- `GET /contacts/search?q=...` pesquisa contatos por nome, e-mail ou telefone
-- `GET /contacts/projects/:projectId` lista contatos de um projeto
-- `GET /contacts/:id` busca um contato por id
-- `POST /contacts` cria um novo contato
-- `PATCH /contacts/:id` atualiza um contato
-- `DELETE /contacts/:id` remove um contato
-
-## Requisitos
-
-- Node.js 18 ou superior
-- npm
-- PostgreSQL
+- **CORS** habilitado para `http://localhost:3001` com `credentials: true`.
+- **ValidationPipe global** com `whitelist`, `forbidNonWhitelisted` e `transform` ativos — payloads só aceitam campos declarados nos DTOs.
+- **cookie-parser** para leitura de cookies de autenticação.
+- **Swagger** disponível em [`/api`](http://localhost:3000/api) com autenticação Bearer.
 
 ## Variáveis de ambiente
 
-O projeto utiliza as seguintes variáveis:
+| Variável        | Descrição                                          |
+|-----------------|----------------------------------------------------|
+| `DATABASE_URL`  | String de conexão PostgreSQL                        |
+| `JWT_SECRET`    | Segredo de assinatura dos tokens JWT                |
+| `SECRET_KEY`    | Chave secreta da aplicação                          |
+| `PORT`          | Porta do servidor (padrão `3000`)                   |
+| `NODE_ENV`      | Ambiente (`development` / `production`)             |
 
-- `DATABASE_URL` conexão com o banco PostgreSQL
-- `SECRET_KEY` chave usada na assinatura dos tokens JWT
-- `PORT` porta da aplicação, opcional
+## Modelo de dados (Prisma)
 
-Exemplo de arquivo `.env`:
-
-```env
-DATABASE_URL="postgresql://user:password@localhost:5432/crm_pro"
-SECRET_KEY="your-secret-key"
-PORT=3000
+```
+Account ──┬─< Funnel ──< Project ──┬─< Contact
+          │                        └─< Task ──< SubTask
+          └─< Session
 ```
 
-## Instalação
+| Modelo    | Descrição                                                       |
+|-----------|-----------------------------------------------------------------|
+| `Account` | Usuário/conta. Possui funis, projetos e sessões.                |
+| `Session` | Sessão de autenticação (guarda `token_hash` para refresh).      |
+| `Funnel`  | Funil de vendas (coluna do kanban). Tem `position` e `color`.   |
+| `Project` | Oportunidade/negócio dentro de um funil.                        |
+| `Contact` | Contato associado a um projeto.                                 |
+| `Task`    | Tarefa de um projeto.                                           |
+| `SubTask` | Subtarefa de uma tarefa.                                        |
 
-```bash
-npm install
+**Enums:**
+
+- `StatusProject`: `ACTIVE`, `COMPLETED`, `PAUSED`, `CANCELLED`
+- `StatusTask`: `PENDING`, `IN_PROGRESS`, `COMPLETED`
+- `Priority`: `LOW`, `MEDIUM`, `HIGH`, `URGENT`
+
+## Endpoints
+
+Base URL: `http://localhost:3000`
+
+### Autenticação — `/auth`
+
+| Método | Rota         | Descrição                          |
+|--------|--------------|------------------------------------|
+| POST   | `/sign-up`   | Cria conta                         |
+| POST   | `/sign-in`   | Login (retorna token + cookie)     |
+| POST   | `/sign-out`  | Logout                             |
+| GET    | `/profile`   | Dados do usuário autenticado       |
+| POST   | `/refresh`   | Renova o token de acesso           |
+
+### Funis — `/funnels`
+
+| Método | Rota             | Descrição                          |
+|--------|------------------|------------------------------------|
+| GET    | `/`              | Lista funis                        |
+| GET    | `/:id`           | Detalha um funil                   |
+| GET    | `/:id/projects`  | Projetos de um funil               |
+| POST   | `/`              | Cria funil                         |
+| PUT    | `/:id`           | Atualiza funil                     |
+| PATCH  | `/:id/position`  | Reordena funil (drag & drop)       |
+| DELETE | `/:id`           | Remove funil                       |
+
+### Projetos — `/projects`
+
+| Método | Rota             | Descrição                          |
+|--------|------------------|------------------------------------|
+| GET    | `/`              | Lista projetos                     |
+| GET    | `/:id`           | Detalha um projeto                 |
+| GET    | `/:id/details`   | Projeto com relacionamentos        |
+| POST   | `/`              | Cria projeto                       |
+| PATCH  | `/:id`           | Atualiza projeto                   |
+| PATCH  | `/:id/position`  | Reordena/move entre funis          |
+| PATCH  | `/:id/status`    | Altera status                      |
+| DELETE | `/:id`           | Remove projeto                     |
+
+### Contatos — `/contacts`
+
+| Método | Rota                    | Descrição                   |
+|--------|-------------------------|-----------------------------|
+| GET    | `/`                     | Lista contatos              |
+| GET    | `/search`               | Busca contatos              |
+| GET    | `/projects/:projectId`  | Contatos de um projeto      |
+| GET    | `/:id`                  | Detalha contato             |
+| POST   | `/`                     | Cria contato                |
+| PATCH  | `/:id`                  | Atualiza contato            |
+| DELETE | `/:id`                  | Remove contato              |
+
+### Tarefas — `/tasks`
+
+| Método | Rota            | Descrição                           |
+|--------|-----------------|-------------------------------------|
+| GET    | `/`             | Lista tarefas                       |
+| GET    | `/today`        | Tarefas com vencimento hoje         |
+| GET    | `/:id`          | Detalha tarefa                      |
+| POST   | `/`             | Cria tarefa                         |
+| PATCH  | `/:id`          | Atualiza tarefa                     |
+| PATCH  | `/:id/status`   | Altera status da tarefa             |
+| DELETE | `/:id`          | Remove tarefa                       |
+
+### Dashboard — `/dashboard`
+
+| Método | Rota         | Descrição                              |
+|--------|--------------|----------------------------------------|
+| GET    | `/overview`  | Métricas e indicadores agregados       |
+
+## Estrutura de pastas
+
+```
+src/
+├── main.ts              # Bootstrap (CORS, Swagger, ValidationPipe)
+├── app.module.ts        # Módulo raiz
+├── prisma/              # PrismaService / módulo de acesso ao banco
+├── auth/                # Autenticação, guards JWT e DTOs
+├── funnel/              # Funis
+├── project/             # Projetos
+├── contact/             # Contatos
+├── task/                # Tarefas
+└── dashboard/           # Métricas agregadas
 ```
 
-## Banco de dados
+Cada módulo de domínio segue o padrão NestJS: `*.controller.ts`, `*.service.ts`, `*.module.ts` e `dto/`.
 
-Gere o client do Prisma e aplique as migrations de desenvolvimento:
+## Documentação da API (Swagger)
 
-```bash
-npm run prisma:generate
-npm run migrate
+Com o servidor rodando, acesse:
+
 ```
-
-Se quiser apenas aplicar migrations em ambiente de teste:
-
-```bash
-npm run test:migrate
-```
-
-## Execução
-
-```bash
-# desenvolvimento
-npm run start:dev
-
-# build
-npm run build
-
-# produção
-npm run start:prod
-```
-
-A API sobe por padrão em `http://localhost:3000`, ou na porta definida em `PORT`.
-
-## Swagger
-
-A documentação interativa fica disponível em:
-
-```text
 http://localhost:3000/api
 ```
-
-No Swagger você encontra:
-
-- descrição dos endpoints
-- schemas dos DTOs
-- parâmetros de rota e query
-- autenticação via Bearer token
-
-Para testar rotas protegidas, use o botão `Authorize` e informe o access token gerado no login.
-
-## Autenticação e fluxo de uso
-
-1. Crie uma conta com `POST /auth/sign-up`.
-2. Faça login em `POST /auth/sign-in`.
-3. Use o `accessToken` no header `Authorization: Bearer <token>`.
-4. O refresh token é mantido em cookie httpOnly para renovar a sessão.
-5. Para testar via Swagger, clique em `Authorize` e cole o bearer token.
-
-## Testes
-
-```bash
-npm run test
-npm run test:cov
-npm run test:e2e
-```
-
-## Estrutura principal
-
-- `src/main.ts`: bootstrap da aplicação e configuração do Swagger
-- `src/app.module.ts`: módulo raiz
-- `src/auth`: autenticação e sessões
-- `src/dashboard`: indicadores da conta
-- `src/funnel`: funis de vendas
-- `src/project`: projetos
-- `src/task`: tarefas
-- `src/contact`: contatos
-- `src/prisma`: integração com Prisma
-- `prisma/schema.prisma`: schema do banco
-
-## Observações
-
-- Os campos sensíveis ou formatados, como telefone, são normalizados antes de persistir no banco.
-- Os DTOs usam validação e metadados do Swagger para documentação automática.
-- A rota raiz `/` não faz parte da API; a documentação fica em `/api`.
-
-## Documentação adicional
-
-- [Modelagem do projeto](documents/modelagem.md)
-
-## Licença
-
-Projeto privado, sem licença definida.
